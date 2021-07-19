@@ -12,6 +12,7 @@ from sebs.cache import Cache
 from sebs.faas import System, PersistentStorage
 from sebs.faas.function import Function
 from sebs.openwhisk.minio import Minio
+from sebs.utils import project_absolute_path
 from .config import OpenWhiskConfig
 from .function import OpenwhiskFunction
 from ..config import SeBSConfig
@@ -44,6 +45,19 @@ class OpenWhisk(System):
     @staticmethod
     def name() -> str:
         return "openwhisk"
+
+    def get_base_image(self, benchmark: Benchmark) -> Tuple[str, bool]:
+        base_image = self.system_config.benchmark_base_images(self.name(), benchmark.language_name)[
+            benchmark.language_version
+        ]
+
+        base_image_src = project_absolute_path('benchmarks', 'base', self.name(), benchmark.language_name,
+                benchmark.language_version)
+        custom_image = os.path.isdir(base_image_src)
+        if custom_image and len(self.docker_client.images.list(name=base_image)) == 0:
+            self.docker_client.images.build(path=base_image_src, tag=base_image)
+
+        return base_image, custom_image
 
     def package_code(self, benchmark: Benchmark) -> Tuple[str, int]:
         benchmark.build()
@@ -82,36 +96,40 @@ class OpenWhisk(System):
             if file not in package_config:
                 file = os.path.join(directory, file)
                 shutil.move(file, function_dir)
-        builder_image = self.system_config.benchmark_base_images(self.name(), benchmark.language_name)[
-            benchmark.language_version
-        ]
-        if benchmark.language_name == node:
-            build_command = 'npm install'
-            volumes = {
-                directory: {'bind': '/nodejsAction'}
-            }
-        else:
-            build_command = 'cd /tmp && virtualenv virtualenv && source virtualenv/bin/activate && ' \
-                            'pip install -r requirements.txt'
-            volumes = {
-                directory: {'bind': '/tmp'}
-            }
 
-        command = '-c "{}"'.format(build_command)
 
-        self.docker_client.containers.run(
-            builder_image,
-            entrypoint="bash",
-            command=command,
-            volumes=volumes,
-            remove=True,
-            stdout=True,
-            stderr=True,
-            user='1000:1000',
-            network_mode="bridge",
-            privileged=True,
-            tty=True
-        )
+        builder_image, is_custom = self.get_base_image(benchmark)
+
+        # Customized image should already contain all dependencies
+        if not is_custom:
+            if benchmark.language_name == node:
+                build_command = 'npm install'
+                volumes = {
+                    directory: {'bind': '/nodejsAction'}
+                }
+            else:
+                build_command = 'cd /tmp && virtualenv virtualenv && source virtualenv/bin/activate && ' \
+                                'pip install -r requirements.txt'
+                volumes = {
+                    directory: {'bind': '/tmp'}
+                }
+
+            command = '-c "{}"'.format(build_command)
+
+            self.docker_client.containers.run(
+                builder_image,
+                entrypoint="bash",
+                command=command,
+                volumes=volumes,
+                remove=True,
+                stdout=True,
+                stderr=True,
+                user='1000:1000',
+                network_mode="bridge",
+                privileged=True,
+                tty=True
+            )
+
         os.chdir(directory)
         subprocess.run(
             "zip -r {}.zip ./".format(benchmark.benchmark).split(),
@@ -147,8 +165,9 @@ class OpenWhisk(System):
                 language_version = benchmark.language_version
                 if benchmark.language_name == "python":
                     language_version = language_version[0]
+                base_image, _ = self.get_base_image(benchmark)
                 subprocess.run(
-                    f"wsk -i action create {function_name} --kind {benchmark.language_name}:{language_version} "
+                    f"wsk -i action create {function_name} --docker {base_image} "
                     f"{zip_path}".split(),
                     stderr=subprocess.DEVNULL,
                     stdout=subprocess.DEVNULL,

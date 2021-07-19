@@ -1,0 +1,7 @@
+jinja2==2.10.3
+Pillow==7.1.0
+#Pillow==6.1
+torchvision==0.2.1
+python-igraph==0.7.1.post6
+squiggle==0.3.1
+minio

@@ -1,5 +1,12 @@
 ARG BASE_IMAGE
 FROM $BASE_IMAGE
+ARG VERSION
 COPY . function/
+# Note:
+# requirements.txt may refer to external sources which cannot be listed in setup.py
 RUN touch function/__init__.py \
-    && pip install --no-cache-dir function/
+    && if test -f "function/requirements.txt.${VERSION}"; then \
+        pip install --no-cache-dir function/ -r function/requirements.txt -r function/requirements.txt.${VERSION}; \
+       else \
+        pip install --no-cache-dir function/ -r function/requirements.txt; \
+       fi

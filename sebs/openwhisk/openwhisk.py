@@ -176,6 +176,7 @@ class OpenWhisk(System):
             path=build_dir,
             buildargs={
                 "BASE_IMAGE": builder_image,
+                "VERSION": language_version,
             },
         )
 

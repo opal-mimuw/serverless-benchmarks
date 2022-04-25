@@ -10,7 +10,7 @@ class storage:
     client = None
 
     def __init__(self):
-        file = open(os.path.join(os.path.dirname(__file__), "minioConfig.json"), "r")
+        file = open("minioConfig.json", "r")
         minioConfig = json.load(file)
         try:
             self.client = minio.Minio(

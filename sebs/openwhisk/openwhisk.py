@@ -34,7 +34,7 @@ class OpenWhisk(System):
 
     def get_storage(self, replace_existing: bool = False) -> PersistentStorage:
         if not hasattr(self, "storage"):
-            self.storage = Minio(self.docker_client, self.cache_client, replace_existing)
+            self.storage = Minio(self.docker_client, self.cache_client, replace_existing, self._config.storageListenAddr)
             self.storage.logging_handlers = self.logging_handlers
             self.storage.start()
         else:

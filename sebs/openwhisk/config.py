@@ -25,6 +25,7 @@ class OpenWhiskResources(Resources):
 
 class OpenWhiskConfig(Config):
     name: str
+    storageListenAddr: str
     shutdownStorage: bool
     cache: Cache
 
@@ -35,6 +36,7 @@ class OpenWhiskConfig(Config):
         self.name = config['name']
         self.shutdownStorage = config['shutdownStorage']
         self.removeCluster = config['removeCluster']
+        self.storageListenAddr = config['storageListenAddr']
         self.cache = cache
 
     @property
@@ -53,6 +55,7 @@ class OpenWhiskConfig(Config):
         return {
             "name": "openwhisk",
             "shutdownStorage": self.shutdownStorage,
+            "storageListenAddr": self.storageListenAddr,
             "removeCluster": self.removeCluster,
             "credentials": self._credentials.serialize(),
             "resources": self._resources.serialize(),

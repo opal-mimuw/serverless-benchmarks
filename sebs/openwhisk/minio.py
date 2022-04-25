@@ -21,8 +21,9 @@ class Minio(sebs.local.storage.Minio):
     location = "openwhiskBenchmark"
     connection: Any
 
-    def __init__(self,docker_client: docker.client, cache_client: Cache, replace_existing: bool):
+    def __init__(self, docker_client: docker.client, cache_client: Cache, replace_existing: bool, listen_addr: str = None):
         super(Minio, self).__init__(docker_client, cache_client, replace_existing)
+        self._listen_addr = listen_addr
         self.start()
         self.connection = self.get_connection()
 
@@ -40,6 +41,10 @@ class Minio(sebs.local.storage.Minio):
             self._access_key = envs['MINIO_ACCESS_KEY']
             self._secret_key = envs['MINIO_SECRET_KEY']
         except docker.errors.NotFound:
+            ports = {}
+            if self._listen_addr:
+                ports[self.port] = tuple(self._listen_addr.split(':'))
+
             self.logging.info("Minio container does not exists, starting")
             self._access_key = secrets.token_urlsafe(32)
             self._secret_key = secrets.token_hex(32)
@@ -50,6 +55,7 @@ class Minio(sebs.local.storage.Minio):
                     "MINIO_ACCESS_KEY": self._access_key,
                     "MINIO_SECRET_KEY": self._secret_key,
                 },
+                ports=ports,
                 remove=True,
                 stdout=True,
                 stderr=True,
@@ -61,7 +67,9 @@ class Minio(sebs.local.storage.Minio):
         self.logging.info("SECRET_KEY={}".format(self._secret_key))
         self._storage_container.reload()
         networks = self._storage_container.attrs["NetworkSettings"]["Networks"]
-        self._url = "{IPAddress}:{Port}".format(
-            IPAddress=networks["bridge"]["IPAddress"], Port=self.port
-        )
+        if self._listen_addr:
+            self._url = self._listen_addr
+        else:
+            self._url = "{IPAddress}:{Port}".format(
+                    IPAddress=networks["bridge"]["IPAddress"], Port=self.port)
         self.logging.info("Minio runs at {}".format(self._url))

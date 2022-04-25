@@ -12,6 +12,7 @@
   "deployment": {
     "name": "openwhisk",
     "shutdownStorage": false,
+    "storageListenAddr": null,
     "removeCluster": false
   }
 }

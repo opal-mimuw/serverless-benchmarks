@@ -163,11 +163,15 @@ class OpenWhisk(System):
         return res
 
     def update_function(self, function: Function, code_package: Benchmark):
-        with open(code_package.code_location) as f:
-            image_tag = f.read()
+        docker_image = self.benchmark_base_image(code_package.benchmark, code_package.language_name,
+                                                 code_package.language_version)
+
         subprocess.run(['wsk', '-i', 'action', 'update', function.name,
-                        '--docker', image_tag,
-                        '--memory', str(code_package.benchmark_config.memory)],
+                        '--web', 'true',
+                        '--docker', docker_image,
+                        '--memory', str(code_package.benchmark_config.memory),
+                        code_package.code_location
+                        ],
                        stderr=subprocess.DEVNULL,
                        stdout=subprocess.DEVNULL,
                        check=True,

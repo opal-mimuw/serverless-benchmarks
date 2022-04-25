@@ -8,27 +8,38 @@ from sebs.faas.function import ExecutionResult, Trigger
 
 
 class LibraryTrigger(Trigger):
-    def __init__(self, fname: str):
+    def __init__(self, fname: str, wsk_cmd: Optional[List[str]] = None):
         super().__init__()
         self.fname = fname
+        if wsk_cmd:
+            self._wsk_cmd = [*wsk_cmd, "action", "invoke", "--result", self.fname]
 
     @staticmethod
     def trigger_type() -> "Trigger.TriggerType":
         return Trigger.TriggerType.LIBRARY
 
+    @property
+    def wsk_cmd(self) -> List[str]:
+        assert self._wsk_cmd
+        return self._wsk_cmd
+
+    @wsk_cmd.setter
+    def wsk_cmd(self, wsk_cmd: List[str]):
+        self._wsk_cmd = [*wsk_cmd, "action", "invoke", "--result", self.fname]
+
     @staticmethod
-    def __add_params__(command: List[str], payload: dict) -> List[str]:
+    def get_command(payload: dict) -> List[str]:
+        params = []
         for key, value in payload.items():
-            command.append("--param")
-            command.append(key)
-            command.append(json.dumps(value))
-        return command
+            params.append("--param")
+            params.append(key)
+            params.append(json.dumps(value))
+        return params
 
     def sync_invoke(self, payload: dict) -> ExecutionResult:
-        command = self.__add_params__(['wsk', '-i', 'action', 'invoke', '--result', self.fname], payload)
+        command = self.wsk_cmd + self.get_command(payload)
         error = None
         try:
-            self.logging.info(f"Executing {command}")
             begin = datetime.datetime.now()
             response = subprocess.run(
                 command,
@@ -37,7 +48,7 @@ class LibraryTrigger(Trigger):
                 check=True,
             )
             end = datetime.datetime.now()
-            response = response.stdout.decode("utf-8")
+            parsed_response = response.stdout.decode("utf-8")
         except (subprocess.CalledProcessError, FileNotFoundError) as e:
             end = datetime.datetime.now()
             error = e
@@ -48,9 +59,7 @@ class LibraryTrigger(Trigger):
             openwhisk_result.stats.failure = True
             return openwhisk_result
 
-        return_content = json.loads(response)
-        self.logging.info(f"{return_content}")
-
+        return_content = json.loads(parsed_response)
         openwhisk_result.parse_benchmark_output(return_content)
         return openwhisk_result
 
@@ -72,13 +81,10 @@ class LibraryTrigger(Trigger):
 
 
 class HTTPTrigger(Trigger):
-    def __init__(self, fname: str):
+    def __init__(self, fname: str, url: str):
         super().__init__()
         self.fname = fname
-        response = subprocess.run(['wsk', '-i', 'action', 'get', fname, '--url'],
-                stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, check=True)
-        stdout = response.stdout.decode("utf-8")
-        self.url = stdout.strip().split('\n')[-1] + '.json'
+        self.url = url
 
     @staticmethod
     def typename() -> str:
@@ -98,8 +104,8 @@ class HTTPTrigger(Trigger):
         return fut
 
     def serialize(self) -> dict:
-        return {"type": "HTTP", "fname": self.fname}
+        return {"type": "HTTP", "fname": self.fname, "url": self.url}
 
     @staticmethod
     def deserialize(obj: dict) -> Trigger:
-        return HTTPTrigger(obj["fname"])
+        return HTTPTrigger(obj["fname"], obj["url"])

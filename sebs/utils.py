@@ -5,7 +5,7 @@ import shutil
 import subprocess
 import sys
 import uuid
-from typing import List, Optional
+from typing import List, Optional, TextIO, Union
 
 PROJECT_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir)
 PACK_CODE_APP = "pack_code_{}.sh"
@@ -70,7 +70,6 @@ def create_output(directory, preserve_dir, verbose):
         shutil.rmtree(output_dir)
     if not os.path.exists(output_dir):
         os.makedirs(output_dir, exist_ok=True)
-    os.chdir(output_dir)
     configure_logging()
 
     return output_dir
@@ -147,7 +146,7 @@ class LoggingHandlers:
         logging_format = "%(asctime)s,%(msecs)d %(levelname)s %(name)s: %(message)s"
         logging_date_format = "%H:%M:%S"
         formatter = logging.Formatter(logging_format, logging_date_format)
-        self.handlers = []
+        self.handlers: List[Union[logging.FileHandler, logging.StreamHandler[TextIO]]] = []
 
         # Add stdout output
         if verbose:
@@ -183,3 +182,7 @@ class LoggingBase:
         self.logging.propagate = False
         for handler in handlers.handlers:
             self.logging.addHandler(handler)
+
+
+def has_platform(name: str) -> bool:
+    return os.environ.get(f"SEBS_WITH_{name.upper()}", "False").lower() == "true"

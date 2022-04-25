@@ -13,6 +13,9 @@
     "name": "openwhisk",
     "shutdownStorage": false,
     "storageListenAddr": null,
-    "removeCluster": false
+    "removeCluster": false,
+    "wskBypassSecurity": "true",
+    "wskExec": "wsk",
+    "experimentalManifest": "false"
   }
 }

@@ -122,7 +122,14 @@ class AWS(System):
         benchmark: benchmark name
     """
 
-    def package_code(self, directory: str, language_name: str,  language_version: str, benchmark: str) -> Tuple[str, int]:
+    def package_code(
+        self,
+        directory: str,
+        language_name: str,
+        language_version: str,
+        benchmark: str,
+        is_cached: bool,
+    ) -> Tuple[str, int]:
 
         CONFIG_FILES = {
             "python": ["handler.py", "requirements.txt", ".python_packages"],
@@ -274,6 +281,11 @@ class AWS(System):
             self.client.update_function_code(
                 FunctionName=name, S3Bucket=bucket, S3Key=code_package_name
             )
+        self.logging.info(
+            f"Updated code of {name} function. "
+            "Sleep 5 seconds before updating configuration to avoid cloud errors."
+        )
+        time.sleep(5)
         # and update config
         self.client.update_function_configuration(
             FunctionName=name, Timeout=function.timeout, MemorySize=function.memory

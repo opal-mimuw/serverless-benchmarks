@@ -1,12 +1,11 @@
 import sebs.local.storage
-from typing import List, Tuple, Any
+from typing import List, Any
 import secrets
-import docker.errors
+import docker
 from sebs.cache import Cache
 
 
 class Minio(sebs.local.storage.Minio):
-
     @staticmethod
     def deployment_name() -> str:
         return "openwhisk"
@@ -32,14 +31,16 @@ class Minio(sebs.local.storage.Minio):
 
     def startMinio(self):
         minioVersion = "minio/minio:latest"
+        # FIXME: merge it with local/minio?
+        # FIXME: check if the container is still runing
         try:
             self._storage_container = self._docker_client.containers.get("minio")
             self.logging.info("Minio container already exists")
             envs = self._storage_container.attrs["Config"]["Env"]
             if isinstance(envs, (tuple, list)):
-                envs = dict([i.split('=', 1) for i in envs])
-            self._access_key = envs['MINIO_ACCESS_KEY']
-            self._secret_key = envs['MINIO_SECRET_KEY']
+                envs = dict([i.split("=", 1) for i in envs])
+            self._access_key = envs["MINIO_ACCESS_KEY"]
+            self._secret_key = envs["MINIO_SECRET_KEY"]
         except docker.errors.NotFound:
             ports = {}
             if self._listen_addr:
@@ -60,7 +61,7 @@ class Minio(sebs.local.storage.Minio):
                 stdout=True,
                 stderr=True,
                 detach=True,
-                name="minio"
+                name="minio",
             )
 
         self.logging.info("ACCESS_KEY={}".format(self._access_key))

@@ -16,32 +16,46 @@ See the [installation instructions](#installation) to learn how to configure SeB
 cloud services and [usage instructions](#usage) to automatically launch experiments in the cloud!
 
 SeBS provides support for automatic deployment and invocation of benchmarks on
-AWS Lambda, Azure Functions, Google Cloud Functions, and a custom, Docker-based local
-evaluation platform. See the [documentation on cloud providers](docs/platforms.md)
-to learn how to provide SeBS with cloud credentials.
+commercial and black-box platforms
+[AWS Lambda](https://aws.amazon.com/lambda/),
+[Azure Functions](https://azure.microsoft.com/en-us/services/functions/),
+and [Google Cloud Functions](https://cloud.google.com/functions).
+Furthermore, we support the open-source platform [OpenWhisk](https://openwhisk.apache.org/)
+and offer a custom, Docker-based local evaluation platform.
+See the [documentation on cloud providers](docs/platforms.md)
+for details on configuring each platform in SeBS.
 The documentation describes in detail [the design and implementation of our
 tool](docs/design.md), and see the [modularity](docs/modularity.md)
 section to learn how SeBS can be extended with new platforms, benchmarks, and experiments.
+Find out more about our project in [a paper summary](mcopik.github.io/projects/sebs/).
 
-SeBS can be used with our Docker image `spcleth/serverless-benchmarks:latest`, or the tool
-can be [installed locally](#installation).
+Do you have further questions not answered by our documentation?
+Did you encounter troubles with installing and using SeBS?
+Or do you want to use SeBS in your work and you need new features?
+Feel free to reach us through GitHub issues or by writing to <marcin.copik@inf.ethz.ch>.
 
 ### Paper
 
-When using SeBS, please cite our Middleware '21 paper (link coming soon!).
-An extended version of our paper is [available on arXiv](https://arxiv.org/abs/2012.15592), and you can
-find more details about research work [in this paper summary](mcopik.github.io/projects/sebs/).
+When using SeBS, please cite our [Middleware '21 paper](https://dl.acm.org/doi/abs/10.1145/3464298.3476133).
+An extended version of our paper is [available on arXiv](https://arxiv.org/abs/2012.14132), and you can
+find more details about research work [in this paper summary](https://mcopik.github.io/projects/sebs/).
 You can cite our software repository as well, using the citation button on the right.
 
 ```
 @inproceedings{copik2021sebs,
-  author={Marcin Copik and Grzegorz Kwasniewski and Maciej Besta and Michal Podstawski and Torsten Hoefler},
-  title={SeBS: A Serverless Benchmark Suite for Function-as-a-Service Computing}, 
+  author = {Copik, Marcin and Kwasniewski, Grzegorz and Besta, Maciej and Podstawski, Michal and Hoefler, Torsten},
+  title = {SeBS: A Serverless Benchmark Suite for Function-as-a-Service Computing},
   year = {2021},
+  isbn = {9781450385343},
   publisher = {Association for Computing Machinery},
+  address = {New York, NY, USA},
   url = {https://doi.org/10.1145/3464298.3476133},
   doi = {10.1145/3464298.3476133},
-  booktitle = {Proceedings of the 22nd International Middleware Conference}
+  booktitle = {Proceedings of the 22nd International Middleware Conference},
+  pages = {64–78},
+  numpages = {15},
+  keywords = {benchmark, serverless, FaaS, function-as-a-service},
+  location = {Qu\'{e}bec city, Canada},
   series = {Middleware '21}
 }
 ```
@@ -82,8 +96,18 @@ To install the benchmarks with a support for all platforms, use:
 ```
 
 It will create a virtual environment in `python-virtualenv`, install necessary Python
-dependecies and third-party dependencies. Then activate the new Python virtual environment, e.g.,
-with `source python-virtualenv/bin/activate`. Now you can deploy serverless experiments :-)
+dependecies and third-party dependencies. To use SeBS, you must first active the new Python
+virtual environment:
+
+```
+. python-virtualenv/bin/activate
+```
+
+Now you can deploy serverless experiments :-)
+
+The installation of additional platforms is controlled with the `--platform` and `--no-platform`
+switches. Currently, the default behavior for `install.py` is to install only the local
+environment.
 
 **Make sure** that your Docker daemon is running and your user has sufficient permissions to use it. Otherwise you might see a lot of "Connection refused" and "Permission denied" errors when using SeBS.
 
@@ -158,11 +182,12 @@ To download cloud metrics and process the invocations into a .csv file with data
 ### Local
 
 In addition to the cloud deployment, we provide an opportunity to launch benchmarks locally with the help of [minio](https://min.io/) storage.
+This allows us to conduct debugging and a local characterization of the benchmarks.
 
-To launch Docker containers serving a selected benchmark, use the following command:
+To launch Docker containers, use the following command - this example launches benchmark `110.dynamic-html` with size `test`:
 
 ```
-./sebs.py local start 110.dynamic-html {input_size} out.json --config config/example.json --deployments 1
+./sebs.py local start 110.dynamic-html test out.json --config config/example.json --deployments 1
 ```
 
 The output file `out.json` will contain the information on containers deployed and the endpoints that can be used to invoke functions:
@@ -236,4 +261,5 @@ Currently supported only on AWS.
 * [Nico Graf (ETH Zurich)](https://github.com/ncograf/) - contributed implementation of regression tests, bugfixes, and helped with testing and documentation.
 * [Kacper Janda](https://github.com/Kacpro), [Mateusz Knapik](https://github.com/maknapik), [JmmCz](https://github.com/JmmCz), AGH University of Science and Technology - contributed together Google Cloud support.
 * [Grzegorz Kwaśniewski (ETH Zurich)](https://github.com/gkwasniewski) - worked on the modeling experiments.
+* [Paweł Żuk (University of Warsaw)](https://github.com/pmzuk) - contributed OpenWhisk support.
 

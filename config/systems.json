@@ -10,7 +10,8 @@
     "languages": {
       "python": {
         "base_images": {
-          "3.6": "python:3.6-slim"
+          "3.6": "python:3.6-slim",
+          "3.8": "python:3.8-slim"
         },
         "images": ["run", "build"],
         "username": "docker_user",
@@ -136,11 +137,12 @@
     "languages": {
       "python": {
         "base_images": {
-          "3.6": "openwhisk/actionloop-python-v3.6-ai",
-          "2.7": "openwhisk/python2action"
+          "3.6": "openwhisk/python3action",
+          "3.7": "openwhisk/action-python-v3.7",
+          "3.9": "openwhisk/action-python-v3.9"
         },
-        "versions": ["3.6", "2.7"],
-        "images": [],
+        "versions": ["3.6", "3.7", "3.9"],
+        "images": ["function"],
         "username": "docker_user",
         "deployment": {
           "files": [ "__main__.py", "storage.py", "setup.py"],
@@ -156,7 +158,7 @@
           "12" : "openwhisk/action-nodejs-v12"
         },
         "versions": [ "8", "10", "12"],
-        "images": [],
+        "images": ["function"],
         "username": "docker_user",
         "deployment": {
           "files": [ "index.js", "storage.js"],
